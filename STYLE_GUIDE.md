@@ -1,4 +1,4 @@
-# Bronx Bot Style Guide
+# Bronx Style Guide
 
 This document defines the visual styling guidelines for Bronx bot responses, embeds, and messages.
 
@@ -54,9 +54,9 @@ EMOJI_WARNING = "01KK7ECQ187S2FZ2X3JS65R9PW"
 ```
 
 **In messages:**
-- ✅ Success/Yes: `:01KK7EC8VP8CMKZW8SB64TCVTC:`
-- ❌ Failure/No: `:01KK7ECH9ES9SRSB9REFGKZMFB:`
-- ⚠️ Warning: `:01KK7ECQ187S2FZ2X3JS65R9PW:`
+- Success/Yes: `:01KK7EC8VP8CMKZW8SB64TCVTC:`
+- Failure/No: `:01KK7ECH9ES9SRSB9REFGKZMFB:`
+- Warning: `:01KK7ECQ187S2FZ2X3JS65R9PW:`
 
 ### Usage Examples
 
@@ -231,7 +231,3 @@ EMOJI_YES = "01KK7EC8VP8CMKZW8SB64TCVTC"
 EMOJI_NO = "01KK7ECH9ES9SRSB9REFGKZMFB"
 EMOJI_WARNING = "01KK7ECQ187S2FZ2X3JS65R9PW"
 ```
-
----
-
-*This style guide ensures Bronx maintains a consistent, professional, and visually appealing presence across all commands and responses.*

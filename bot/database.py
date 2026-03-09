@@ -39,11 +39,24 @@ async def ensure_tables() -> None:
         async with conn.cursor() as cur:
             await cur.execute("""
                 CREATE TABLE IF NOT EXISTS economy (
-                    user_id   VARCHAR(64) PRIMARY KEY,
-                    balance   BIGINT      NOT NULL DEFAULT 0,
-                    last_daily DATETIME   NULL
+                    user_id     VARCHAR(64) PRIMARY KEY,
+                    balance     BIGINT      NOT NULL DEFAULT 0,
+                    last_daily  DATETIME    NULL,
+                    last_work   DATETIME    NULL,
+                    last_beg    DATETIME    NULL,
+                    last_crime  DATETIME    NULL,
+                    last_fish   DATETIME    NULL,
+                    last_search DATETIME    NULL
                 )
             """)
+            # migrate existing tables that may be missing new columns
+            for col in ("last_work", "last_beg", "last_crime", "last_fish", "last_search"):
+                try:
+                    await cur.execute(
+                        f"ALTER TABLE economy ADD COLUMN IF NOT EXISTS {col} DATETIME NULL"
+                    )
+                except Exception:
+                    pass
     log.info("database tables verified")
 
 

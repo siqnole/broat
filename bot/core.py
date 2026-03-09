@@ -10,6 +10,8 @@ from bot.gears.general import General
 from bot.gears.moderation import Moderation
 from bot.gears.fun import Fun
 from bot.gears.info import Info
+from bot.gears.economy import Economy
+from bot import database
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 log = logging.getLogger("bronx")
@@ -35,10 +37,12 @@ class Bronx(commands.Bot):
         log.info("prefix: %s", self.command_prefix)
 
         if not self.gears:
+            await database.ensure_tables()
             await self.add_gear(General(self))
             await self.add_gear(Moderation(self))
             await self.add_gear(Fun(self))
             await self.add_gear(Info(self))
+            await self.add_gear(Economy(self))
             log.info("all gears loaded")
 
     async def on_command_error(self, event: commands.CommandErrorEvent, /) -> None:
