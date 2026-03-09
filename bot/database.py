@@ -57,7 +57,152 @@ async def ensure_tables() -> None:
                     )
                 except Exception:
                     pass
+
+            await cur.execute("""
+                CREATE TABLE IF NOT EXISTS server_prefixes (
+                    server_id  VARCHAR(64) NOT NULL,
+                    prefix     VARCHAR(32) NOT NULL,
+                    PRIMARY KEY (server_id, prefix)
+                )
+            """)
+
+            # user_prefixes: migrate from old single-prefix schema if needed
+            # Old schema had (user_id PRIMARY KEY, prefix) — new schema uses
+            # composite key (user_id, prefix) to allow multiple prefixes per user.
+            try:
+                await cur.execute("""
+                    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME   = 'user_prefixes'
+                      AND CONSTRAINT_TYPE = 'PRIMARY KEY'
+                """)
+                row = await cur.fetchone()
+                if row and row[0]:
+                    # table exists — check column count in PK
+                    await cur.execute("""
+                        SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME   = 'user_prefixes'
+                          AND CONSTRAINT_NAME = 'PRIMARY'
+                    """)
+                    pk_cols = (await cur.fetchone())[0]
+                    if pk_cols == 1:
+                        # old single-column PK — migrate
+                        await cur.execute("ALTER TABLE user_prefixes DROP PRIMARY KEY")
+                        await cur.execute(
+                            "ALTER TABLE user_prefixes ADD PRIMARY KEY (user_id, prefix)"
+                        )
+                        await cur.execute(
+                            "ALTER TABLE user_prefixes MODIFY user_id VARCHAR(64) NOT NULL"
+                        )
+                        log.info("migrated user_prefixes to composite primary key")
+            except Exception:
+                pass
+
+            await cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_prefixes (
+                    user_id  VARCHAR(64) NOT NULL,
+                    prefix   VARCHAR(32) NOT NULL,
+                    PRIMARY KEY (user_id, prefix)
+                )
+            """)
     log.info("database tables verified")
+
+
+# ---------------------------------------------------------------------------
+# Prefix helpers
+# ---------------------------------------------------------------------------
+
+async def get_server_prefixes(server_id: str) -> list[str]:
+    """Return all custom prefixes for a server (may be empty)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT prefix FROM server_prefixes WHERE server_id = %s",
+                (server_id,),
+            )
+            rows = await cur.fetchall()
+            return [r[0] for r in rows]
+
+
+async def add_server_prefix(server_id: str, prefix: str) -> bool:
+    """Add a prefix for a server. Returns False if it already exists."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            try:
+                await cur.execute(
+                    "INSERT INTO server_prefixes (server_id, prefix) VALUES (%s, %s)",
+                    (server_id, prefix),
+                )
+                return True
+            except Exception:
+                return False
+
+
+async def remove_server_prefix(server_id: str, prefix: str) -> bool:
+    """Remove a prefix from a server. Returns False if it didn't exist."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "DELETE FROM server_prefixes WHERE server_id = %s AND prefix = %s",
+                (server_id, prefix),
+            )
+            return cur.rowcount > 0
+
+
+async def get_user_prefixes(user_id: str) -> list[str]:
+    """Return all custom prefixes for a user (may be empty)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "SELECT prefix FROM user_prefixes WHERE user_id = %s",
+                (user_id,),
+            )
+            rows = await cur.fetchall()
+            return [r[0] for r in rows]
+
+
+async def add_user_prefix(user_id: str, prefix: str) -> bool:
+    """Add a prefix for a user. Returns False if it already exists."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            try:
+                await cur.execute(
+                    "INSERT INTO user_prefixes (user_id, prefix) VALUES (%s, %s)",
+                    (user_id, prefix),
+                )
+                return True
+            except Exception:
+                return False
+
+
+async def remove_user_prefix(user_id: str, prefix: str) -> bool:
+    """Remove a prefix from a user. Returns False if it didn't exist."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "DELETE FROM user_prefixes WHERE user_id = %s AND prefix = %s",
+                (user_id, prefix),
+            )
+            return cur.rowcount > 0
+
+
+async def clear_user_prefixes(user_id: str) -> bool:
+    """Remove all of a user's personal prefixes. Returns False if none existed."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(
+                "DELETE FROM user_prefixes WHERE user_id = %s",
+                (user_id,),
+            )
+            return cur.rowcount > 0
 
 
 async def close() -> None:

@@ -321,7 +321,7 @@ class Economy(commands.Gear):
 
     # ── crime ────────────────────────────────────────────────────────────
 
-    @commands.command()
+    @commands.command(name="crime", aliases=['rob', 'steal'])
     async def crime(self, ctx: commands.Context) -> None:
         """commit a crime — high risk, high reward (every 2h)"""
         user_id = str(ctx.author.id)
@@ -372,7 +372,7 @@ class Economy(commands.Gear):
 
     # ── fish ─────────────────────────────────────────────────────────────
 
-    @commands.command()
+    @commands.command(name="fish", aliases=['f'])
     async def fish(self, ctx: commands.Context) -> None:
         """go fishing for coins (every 45m)"""
         user_id = str(ctx.author.id)
@@ -407,7 +407,7 @@ class Economy(commands.Gear):
 
     # ── search ───────────────────────────────────────────────────────────
 
-    @commands.command()
+    @commands.command(name="search", aliases=['s'])
     async def search(self, ctx: commands.Context) -> None:
         """search for coins in random places (every 30m)"""
         user_id = str(ctx.author.id)

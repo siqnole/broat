@@ -1,3 +1,4 @@
+import os
 import time
 import platform
 import asyncio
@@ -7,6 +8,19 @@ import stoat
 from stoat.ext import commands
 
 from bot import style
+from bot import database
+
+
+def _short_prefix(ctx: commands.Context) -> str:
+    """Return a short, human-friendly prefix for display.
+
+    Skips mention-style prefixes so embeds stay compact.
+    Falls back to the env default.
+    """
+    prefix = ctx.prefix
+    if prefix and not prefix.startswith("<@"):
+        return prefix
+    return os.environ.get("COMMAND_PREFIX", "!")
 
 
 class General(commands.Gear):
@@ -16,16 +30,18 @@ class General(commands.Gear):
         self.bot = bot
         self._start_time = time.monotonic()
 
-    @commands.command()
+    @commands.command(name="help", aliases=['h', 'cmds', '?'])
     async def help(self, ctx: commands.Context, *, command_name: str = None) -> None:
         """show commands"""
+        pfx = _short_prefix(ctx)
+
         if command_name:
             cmd = self.bot.get_command(command_name)
             if cmd:
                 doc = cmd.help or "no description"
                 
                 # build usage string
-                usage_parts = [f"{ctx.prefix}{cmd.name}"]
+                usage_parts = [f"{pfx}{cmd.name}"]
                 if hasattr(cmd, 'params') and cmd.params:
                     for param_name, param in cmd.params.items():
                         if param_name in ('self', 'ctx'):
@@ -61,10 +77,12 @@ class General(commands.Gear):
                 description_lines.append(f"**{gear_name.lower()}**")
                 for cmd in gear_commands:
                     doc = cmd.help or "no description"
-                    description_lines.append(f"`{ctx.prefix}{cmd.name}` — {doc}")
+                    # only show first line in listing
+                    first_line = doc.split("\n")[0].strip()
+                    description_lines.append(f"`{pfx}{cmd.name}` — {first_line}")
                 description_lines.append("")
         
-        description_lines.append(f"`{ctx.prefix}help <command>` for info")
+        description_lines.append(f"`{pfx}help <command>` for info")
         
         embed = stoat.SendableEmbed(
             description="\n".join(description_lines),
@@ -134,10 +152,11 @@ class General(commands.Gear):
     @commands.command()
     async def about(self, ctx: commands.Context) -> None:
         """about the bot"""
+        pfx = _short_prefix(ctx)
         lines = [
             "bronx — stoat.chat bot",
             f"python {platform.python_version()} · stoat.py",
-            f"prefix: `{ctx.prefix}`",
+            f"prefix: `{pfx}`",
         ]
         await ctx.send("\n".join(lines))
 
