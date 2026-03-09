@@ -90,7 +90,7 @@ class General(commands.Gear):
         )
         await ctx.send(embeds=[embed])
 
-    @commands.command()
+    @commands.command(name="ping", aliases=['ms'])
     async def ping(self, ctx: commands.Context) -> None:
         """check latency"""
         start_time = time.perf_counter_ns()
